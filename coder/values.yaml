@@ -1,0 +1,75 @@
+coder:
+  # You can specify any environment variables you'd like to pass to Coder
+  # here. Coder consumes environment variables listed in
+  # `coder server --help`, and these environment variables are also passed
+  # to the workspace provisioner (so you can consume them in your Terraform
+  # templates for auth keys etc.).
+  #
+  # Please keep in mind that you should not set `CODER_ADDRESS`,
+  # `CODER_TLS_ENABLE`, `CODER_TLS_CERT_FILE` or `CODER_TLS_KEY_FILE` as
+  # they are already set by the Helm chart and will cause conflicts.
+  env:
+    - name: CODER_PG_CONNECTION_URL
+      valueFrom:
+        secretKeyRef:
+          # You'll need to create a secret called coder-db-url with your
+          # Postgres connection URL like:
+          # postgres://coder:password@postgres:5432/coder?sslmode=disable
+          name: coder-db-url
+          key: url
+
+    # (Optional) For production deployments the access URL should be set.
+    # If you're just trying Coder, access the dashboard via the service IP.
+    - name: CODER_ACCESS_URL
+      value: "https://mydomain.com"
+    - name: CODER_WILDCARD_ACCESS_URL
+      value: "*.mydomain.com"
+
+  # coder.service -- The Service object to expose for Coder.
+  service:
+    # coder.service.enable -- Whether to create the Service object.
+    enable: true
+    # coder.service.type -- The type of service to expose. See:
+    # https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    type: ClusterIP
+    # coder.service.sessionAffinity -- Must be set to ClientIP or None
+    # AWS ELB does not support session stickiness based on ClientIP, so you must set this to None.
+    # The error message you might see: "Unsupported load balancer affinity: ClientIP"
+    # https://kubernetes.io/docs/reference/networking/virtual-ips/#session-affinity
+    sessionAffinity: ClientIP
+    # coder.service.externalTrafficPolicy -- The external traffic policy to use.
+    # You may need to change this to "Local" to preserve the source IP address
+    # in some situations.
+    # https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+    externalTrafficPolicy: Cluster
+    # coder.service.loadBalancerIP -- The IP address of the LoadBalancer. If not
+    # specified, a new IP will be generated each time the load balancer is
+    # recreated. It is recommended to manually create a static IP address in
+    # your cloud and specify it here in production to avoid accidental IP
+    # address changes.
+    loadBalancerIP: ""
+    # coder.service.annotations -- The service annotations. See:
+    # https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+    annotations: {}
+
+  # coder.ingress -- The Ingress object to expose for Coder.
+  ingress:
+    # coder.ingress.enable -- Whether to create the Ingress object. If using an
+    # will handle TLS termination.
+    enable: true
+    # coder.ingress.className -- The name of the Ingress class to use.
+    className: ""
+    # coder.ingress.host -- The hostname to match on.
+    host: "mydomain.com"
+    wildcardHost: "*.mydomain.com"
+    # coder.ingress.wildcardHost -- The wildcard hostname to match on. Should be
+    # in the form "*.example.com" or "*-suffix.example.com". If you are using a
+    # suffix after the wildcard, the suffix will be stripped from the created
+    # ingress to ensure that it is a legal ingress host. Optional if not using
+    # applications over subdomains.
+    # coder.ingress.annotations -- The ingress annotations.
+    annotations: {}
+    tls:
+      enable: false
+      secretNames: ""
+      wildcardSecretName: ""

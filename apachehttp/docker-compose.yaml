@@ -1,0 +1,20 @@
+services:
+
+  httpd:
+    container_name: httpd
+    image: httpd:latest
+    volumes:
+      - ./httpd.conf:/usr/local/apache2/conf/httpd.conf
+      - ./conf:/usr/local/apache2/conf/sites
+      - /ssl:/ssl
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - reverseproxynetwork
+
+networks:
+  reverseproxynetwork:
+    name: reverseproxynetwork
+    external: true
