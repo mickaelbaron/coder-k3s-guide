@@ -458,8 +458,6 @@ networks:
     external: true
 ```
 
-> ℹ️ the Git repository supplies _httpd.conf_ 
-
 * Create and start Apache HTTP container:
 
 ```
