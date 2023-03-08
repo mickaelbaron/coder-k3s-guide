@@ -1,4 +1,4 @@
-# Running Coder in [k3s](https://k3s.io/)
+# Running [Coder](https://coder.com/) in [k3s](https://k3s.io/)
 
 [Coder](https://coder.com/) is a self-Hosted Remote Development Platform which allows to build your code on servers. This guide helps to deploy [Coder](https://coder.com/) on a k3s cluster.
 
