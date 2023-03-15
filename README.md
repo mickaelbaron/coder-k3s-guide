@@ -1,4 +1,4 @@
-# Running [Coder](https://coder.com/) in [k3s](https://k3s.io/)
+# Running [Coder](https://coder.com/) in [K3s](https://k3s.io/)
 
 [Coder](https://coder.com/) is a self-Hosted Remote Development Platform which allows to build your code on servers. This guide helps to deploy [Coder](https://coder.com/) on a k3s cluster.
 
@@ -34,14 +34,14 @@ The plan of this guide is the following:
 $ curl -sfL https://get.k3s.io | sh -
 ```
 
-* Extract the [k3s](https://k3s.io/) token on the server node:
+* Extract the [K3s](https://k3s.io/) token on the server node:
 
 ```console
 $ sudo cat /var/lib/rancher/k3s/server/node-token
 K20545dbddda0f19bf1c9ac794546d200cdc4ede3fe9ad82d5e560ad0748cc28fd4::server:17a174d18d4fd82c0f99b687bd9aabcd
 ```
 
-> 🤓 It is my [k3s](https://k3s.io/) token, of course, extract YOUR [k3s](https://k3s.io/) token.
+> 🤓 It is my [K3s](https://k3s.io/) token, of course, extract YOUR [K3s](https://k3s.io/) token.
 
 * Connect to the first agent node (`k3snode1`) and run:
 
@@ -63,13 +63,13 @@ $ curl -sfL https://get.k3s.io | K3S_URL=https://k3sserver:6443 K3S_TOKEN=mynode
 $ scp k3sserver:/etc/rancher/k3s/k3s.yaml .
 ```
 
-* Update the [k3s](https://k3s.io/) server address (old value: 127.0.0.1) by the new hostname:
+* Update the [K3s](https://k3s.io/) server address (old value: 127.0.0.1) by the new hostname:
 
 ```
 $ sed -i '' "s/127.0.0.1/k3sserver/" k3s.yaml
 ```
 
-* Check the [k3s](https://k3s.io/) cluster:
+* Check the [K3s](https://k3s.io/) cluster:
 
 ```
 $ export KUBECONFIG=$PWD/k3s.yaml
@@ -80,7 +80,7 @@ k3snode1    Ready    <none>                 21d   v1.25.6+k3s1
 k3snode2    Ready    <none>                 21d   v1.25.6+k3s1
 ```
 
-> 📄 These instructions are based on the [k3s](https://k3s.io/) website: https://docs.k3s.io/quick-start.
+> 📄 These instructions are based on the [K3s](https://k3s.io/) website: https://docs.k3s.io/quick-start.
 
 ## Deploy Coder
 
@@ -91,7 +91,7 @@ $ kubectl create namespace coder
 namespace/coder created
 ```
 
-* Deploy PostgreSQL to the [k3s](https://k3s.io/) cluster from [Bitnami](https://bitnami.com/) repository:
+* Deploy PostgreSQL to the [K3s](https://k3s.io/) cluster from [Bitnami](https://bitnami.com/) repository:
 
 ```console
 $ helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -210,7 +210,7 @@ coder:
 
 Service will be configured as a ClusterIP. We configure Ingress to request the host (`coder.mydomain.com`) HTTP queries.
 
-* Install the HELM chart in your [k3s](https://k3s.io/) cluster:
+* Install the HELM chart in your [K3s](https://k3s.io/) cluster:
 
 ```console
 $ helm install coder coder-v2/coder --namespace coder --values values.yaml
@@ -300,13 +300,13 @@ Two Reverse Proxy will be presented: NGINX and Apache HTTP. Choose only ONE at y
 
 * Connect to the server node (`k3sserver`).
 
-* Create _nginx_ configuration files directory.
+* Create _nginx_ configuration files directory:
 
 ```console
 $ mkdir ~/nginx
 ``` 
 
-* Create NGINX configuration file [~/nginx/conf/coder.conf](nginx/conf/coder.conf) with the following content.
+* Create NGINX configuration file [~/nginx/conf/coder.conf](nginx/conf/coder.conf) with the following content:
 
 ```
 server {
@@ -379,7 +379,7 @@ $ docker compose up -d
 $ mkdir ~/apachehttp
 ``` 
 
-* Create Apache HTTP configuration file [~/apachehttp/conf/coder.conf](apachehttp/conf/coder.conf) with the following content.
+* Create Apache HTTP configuration file [~/apachehttp/conf/coder.conf](apachehttp/conf/coder.conf) with the following content:
 
 ```
 <VirtualHost *:443>
@@ -461,9 +461,12 @@ networks:
 * Create and start Apache HTTP container:
 
 ```
+$ cd ~/apachehttp
 $ docker compose up -d
 ```
 
 ## Run
 
-* Open your favorite web browser to https://coder.mydomain.com
+* Open your favorite web browser at this URL: https://coder.mydomain.com
+
+![Coder is running on K3s](./static/coder-sigin.png)
