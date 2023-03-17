@@ -4,17 +4,17 @@
 
 Before starting the [Coder](https://coder.com/) install process, you must have:
 
-* Infrastructure (to reproduce the experimentation)
+* The following infrastructure (to reproduce the experimentation):
   * Three Ubuntu 22.04 machines with SSH credentials.
-    * Hostname for each machine (physical or virtual): `k3sserver`, `k3snode1`, `k3snode2`.
-    * Same vlan for all machine.
-    * All machine have ports 22 (SSH), 80 (HTTP), 443 (HTTPS) and 6443 (Kubernetes) exposed.
-  * A domain (coder.mydomain.com), subdomain (*.coder.mydomain.com) and a configured DNS to redirect to `k3sserver`.
-  * Reverse Proxy (Apache HTTP or NGINX) will be hosted in outside the Kubernetes cluster.
-  * [Docker](https://www.docker.com/) installation on `k3sserver` to deploy Reverse Proxy.
+    * The hostname of each machine (physical or virtual) is: `k3sserver`, `k3snode1` and `k3snode2`.
+    * All machines are on the same vlan.
+    * All machines have ports 22 (SSH), 80 (HTTP), 443 (HTTPS) and 6443 (Kubernetes) exposed.
+  * A domain (coder.mydomain.com), a subdomain (*.coder.mydomain.com) and a configured DNS to redirect to `k3sserver`.
+  * A reverse Proxy (Apache HTTP or NGINX) which will be hosted outside of the Kubernetes cluster.
+  * A [Docker](https://www.docker.com/) installation on `k3sserver` to deploy the Reverse Proxy.
 
-* Local
-  * kubectl
+* Locally
+  * [kubectl](https://kubernetes.io/docs/reference/kubectl/)
   * [HELM](https://helm.sh/)
 
 The plan of this guide is the following:
@@ -41,37 +41,37 @@ $ sudo cat /var/lib/rancher/k3s/server/node-token
 K20545dbddda0f19bf1c9ac794546d200cdc4ede3fe9ad82d5e560ad0748cc28fd4::server:17a174d18d4fd82c0f99b687bd9aabcd
 ```
 
-> 🤓 It is my [K3s](https://k3s.io/) token, of course, extract YOUR [K3s](https://k3s.io/) token.
+> 🤓 This is my own [K3s](https://k3s.io/) token. You will have to adapt the next few instructions with YOUR [K3s](https://k3s.io/) token.
 
 * Connect to the first agent node (`k3snode1`) and run:
 
-```
-$ mynodetoken=K20545dbddda0f19bf1c9ac794546d200cdc4ede3fe9ad82d5e560ad0748cc28fd4::server:17a174d18d4fd82c0f99b687bd9aabcd
-$ curl -sfL https://get.k3s.io | K3S_URL=https://k3sserver:6443 K3S_TOKEN=mynodetoken sh -
+```console
+$ export K3S_TOKEN=K20545dbddda0f19bf1c9ac794546d200cdc4ede3fe9ad82d5e560ad0748cc28fd4::server:17a174d18d4fd82c0f99b687bd9aabcd
+$ curl -sfL https://get.k3s.io | K3S_URL=https://k3sserver:6443 sh -
 ```
 
 * Connect to the second agent node (`k3snode2`) and execute the same command line:
 
-```
-$ mynodetoken=K20545dbddda0f19bf1c9ac794546d200cdc4ede3fe9ad82d5e560ad0748cc28fd4::server:17a174d18d4fd82c0f99b687bd9aabcd
-$ curl -sfL https://get.k3s.io | K3S_URL=https://k3sserver:6443 K3S_TOKEN=mynodetoken sh -
+```console
+$ export K3S_TOKEN=K20545dbddda0f19bf1c9ac794546d200cdc4ede3fe9ad82d5e560ad0748cc28fd4::server:17a174d18d4fd82c0f99b687bd9aabcd
+$ curl -sfL https://get.k3s.io | K3S_URL=https://k3sserver:6443 sh -
 ```
 
 * To get the cluster access file (_k3s.yaml_), from your host, run:
 
-```
+```console
 $ scp k3sserver:/etc/rancher/k3s/k3s.yaml .
 ```
 
-* Update the [K3s](https://k3s.io/) server address (old value: 127.0.0.1) by the new hostname:
+* Update the [K3s](https://k3s.io/) server address (old value: 127.0.0.1) with the new hostname:
 
-```
+```console
 $ sed -i '' "s/127.0.0.1/k3sserver/" k3s.yaml
 ```
 
 * Check the [K3s](https://k3s.io/) cluster:
 
-```
+```console
 $ export KUBECONFIG=$PWD/k3s.yaml
 $ kubectl get nodes
 NAME        STATUS   ROLES                  AGE   VERSION
@@ -84,14 +84,14 @@ k3snode2    Ready    <none>                 21d   v1.25.6+k3s1
 
 ## Deploy Coder
 
-* Create a namespace for [Coder](https://coder.com/), such as `coder`:
+* Create a namespace for [Coder](https://coder.com/), named `coder` in this example:
 
 ```console
 $ kubectl create namespace coder
 namespace/coder created
 ```
 
-* Deploy PostgreSQL to the [K3s](https://k3s.io/) cluster from [Bitnami](https://bitnami.com/) repository:
+* Deploy PostgreSQL on the [K3s](https://k3s.io/) cluster from the [Bitnami](https://bitnami.com/) repository:
 
 ```console
 $ helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -142,7 +142,7 @@ To connect to your database from outside the cluster execute the following comma
     PGPASSWORD="$POSTGRES_PASSWORD" psql --host 127.0.0.1 -U coder -d coder -p 5432
 ```
 
-* Check if a PostgreSQL pod has been created:
+* Verify that a PostgreSQL pod has been created:
 
 ```console
 $ kubectl get pods --namespace coder
@@ -158,17 +158,17 @@ postgres://coder:coder@coder-db-postgresql.coder.svc.cluster.local:5432/coder?ss
 
 * Create a secret with the database URL:
 
-```
+```console
 $ kubectl create secret generic coder-db-url -n coder --from-literal=url="postgres://coder:coder@coder-db-postgresql.coder.svc.cluster.local:5432/coder?sslmode=disable"
 ```
 
 * Add the Coder Helm repository:
 
-```
+```console
 $ helm repo add coder-v2 https://helm.coder.com/v2
 ```
 
-* Create a [values.yaml](coder/values.yaml) with the configuration settings you wouldd like for your deployment. Update the content following the `# TODO` comments:
+* Create a [values.yaml](coder/values.yaml) configuration file with the suitable settings for your deployment. You should at least update the content following the `# TODO` comments:
 
 ```yaml
 coder:
@@ -208,9 +208,9 @@ coder:
       wildcardSecretName: ""
 ```
 
-Service will be configured as a ClusterIP. We configure Ingress to request the host (`coder.mydomain.com`) HTTP queries.
+The service will be configured as a ClusterIP. We configure Ingress to handle requests for the (`coder.mydomain.com`) domain.
 
-* Install the HELM chart in your [K3s](https://k3s.io/) cluster:
+* Install the HELM chart on your [K3s](https://k3s.io/) cluster:
 
 ```console
 $ helm install coder coder-v2/coder --namespace coder --values values.yaml
@@ -226,13 +226,13 @@ coder-db-postgresql-0    1/1     Running   0          22d
 coder-59c6bc9c77-6f2wj   1/1     Running   0          9m47s
 ```
 
-> 📄 These instructions are based on the [Coder](https://coder.com/) website: https://coder.com/docs/v2/latest/install/kubernetes
+> 📄 These instructions are based on the [Coder](https://coder.com/) website: https://coder.com/docs/v2/latest/install/kubernetes.
 
 ## Deploy Reverse Proxy
 
 As mentioned in the introduction, a Reverse Proxy will be deployed outside of your Kubernetes cluster.
 
-The Reverse Proxy will also be in charge of managing SSL/TLS certificates. Let's describe how to generate certificate with LetsEncrypt.
+The Reverse Proxy will also be in charge of managing SSL/TLS certificates. Let's describe how to generate certificates with LetsEncrypt.
 
 * Connect to the server node (`k3sserver`) and install Certbot:
 
@@ -241,14 +241,14 @@ $ sudo apt-get update
 $ sudo apt-get install certbot -y
 ```
 
-* Create the SSL/TLS certificate:
+* Create the SSL/TLS certificates:
 
 ```console
 $ sudo certbot certonly --agree-tos -m YOUR_EMAIL --manual --preferred-challenges=dns -d 'coder.mydomain.com' -d '*.coder.mydomain.com' -v
 ...
 ```
 
-* Copy the SSL/TLS certificate files (_fullchain.pem_ and _privkey.pem_) into a directory (i.e. _/ssl_):
+* Copy the SSL/TLS certificates files (_fullchain.pem_ and _privkey.pem_) into a directory (i.e. _/ssl_):
 
 ```console
 $ mkdir /ssl
@@ -262,9 +262,9 @@ $ cd /ssl
 $ openssl dhparam -out dhparams.pem 4096
 ```
 
-We need to configure our Kubernetes cluster to update HTTP and HTTPS listen ports.
+You need to configure your Kubernetes cluster to update HTTP and HTTPS listen ports.
 
-* Connect to the server node (`k3sserver`) and create _/var/lib/rancher/k3s/server/manifests/traefik-config.yaml_ file with the following content:
+* Connect to the server node (`k3sserver`) and create a _/var/lib/rancher/k3s/server/manifests/traefik-config.yaml_ file with the following content:
 
 ```yaml
 kind: HelmChartConfig
@@ -286,7 +286,7 @@ spec:
 $ kubectl apply -f /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
 ```
 
-We suppose [Docker](https://www.docker.com/) is installed in the server node (`k3sserver`). 
+We suppose [Docker](https://www.docker.com/) is installed on the server node (`k3sserver`). 
 
 * Create a Docker network called `reverseproxynetwork`:
 
@@ -294,19 +294,19 @@ We suppose [Docker](https://www.docker.com/) is installed in the server node (`k
 $ docker network create reverseproxynetwork
 ```
 
-Two Reverse Proxy will be presented: NGINX and Apache HTTP. Choose only ONE at your convenience.
+Two Reverse Proxy solutions will be presented: [NGINX](https://www.nginx.com/) and [Apache HTTP](https://httpd.apache.org/). Choose only ONE at your convenience.
 
 ### NGINX
 
 * Connect to the server node (`k3sserver`).
 
-* Create _nginx_ configuration files directory:
+* Create an _nginx_ directory:
 
 ```console
 $ mkdir ~/nginx
 ``` 
 
-* Create NGINX configuration file [~/nginx/conf/coder.conf](nginx/conf/coder.conf) with the following content:
+* Create an NGINX configuration file [~/nginx/conf/coder.conf](nginx/conf/coder.conf) with the following content:
 
 ```
 server {
@@ -338,7 +338,7 @@ server {
 }
 ```
 
-* Create [~/nginx/docker-compose.yaml](nginx/docker-compose.yaml) with the following content:
+* Create a file [~/nginx/docker-compose.yaml](nginx/docker-compose.yaml) with the following content:
 
 ```yaml
 services:
@@ -362,7 +362,7 @@ networks:
     external: true
 ```
 
-* Create and start NGINX container:
+* Create and start the NGINX container:
 
 ```console
 $ cd ~/nginx
@@ -373,55 +373,55 @@ $ docker compose up -d
 
 * Connect to the server node (`k3sserver`).
 
-* Create _apachehttp_ configuration files directory.
+* Create an _apachehttp_ directory.
 
 ```console
 $ mkdir ~/apachehttp
 ``` 
 
-* Create Apache HTTP configuration file [~/apachehttp/conf/coder.conf](apachehttp/conf/coder.conf) with the following content:
+* Create an Apache HTTP configuration file [~/apachehttp/conf/coder.conf](apachehttp/conf/coder.conf) with the following content:
 
 ```
 <VirtualHost *:443>
 	SSLEngine On
 	SSLProxyEngine on
 
-    SSLProxyVerify none
-    SSLProxyCheckPeerCN off
-    SSLProxyCheckPeerName off
-    SSLProxyCheckPeerExpire off
+  SSLProxyVerify none
+  SSLProxyCheckPeerCN off
+  SSLProxyCheckPeerName off
+  SSLProxyCheckPeerExpire off
 
-    SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
-    SSLHonorCipherOrder On
-    SSLCipherSuite "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH EDH+aRSA !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS !RC4 !SHA1 !SHA256 !SHA384"
-    SSLCompression off
+  SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
+  SSLHonorCipherOrder On
+  SSLCipherSuite "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH EDH+aRSA !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS !RC4 !SHA1 !SHA256 !SHA384"
+  SSLCompression off
 
-    # HSTS (http://fr.wikipedia.org/wiki/HTTP_Strict_Transport_Security)
-    Header unset Strict-Transport-Security
-    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-    RequestHeader set X-Forwarded-Proto https"
-    RequestHeader set X-Forwarded-Port "443"
+  # HSTS (http://fr.wikipedia.org/wiki/HTTP_Strict_Transport_Security)
+  Header unset Strict-Transport-Security
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  RequestHeader set X-Forwarded-Proto https"
+  RequestHeader set X-Forwarded-Port "443"
 
-	# Certificat
-    SSLCertificateFile /ssl/fullchain.pem
-    SSLCertificateKeyFile /ssl/privkey.pem
+	# Certificates
+  SSLCertificateFile /ssl/fullchain.pem
+  SSLCertificateKeyFile /ssl/privkey.pem
 
 	ServerName *.coder.mydomain.com
 
 	ProxyPreserveHost On
 	ProxyRequests off
-    ProxyPass / http://k3sserver:8080/ upgrade=any
-    ProxyPassReverse / http://k3sserver:8080/
+  ProxyPass / http://k3sserver:8080/ upgrade=any
+  ProxyPassReverse / http://k3sserver:8080/
 
-  	RewriteEngine on
+  RewriteEngine on
 
-  	RewriteCond %{HTTP:Connection} Upgrade [NC]
-  	RewriteCond %{HTTP:Upgrade} websocket [NC]
-  	RewriteRule /(.*) ws://k3sserver:8080/$1 [P,L]
+  RewriteCond %{HTTP:Connection} Upgrade [NC]
+  RewriteCond %{HTTP:Upgrade} websocket [NC]
+  RewriteRule /(.*) ws://k3sserver:8080/$1 [P,L]
 
 	# Custom log file for SSL
-  	ErrorLog /var/log/apachehttp/coder/error.log
-  	CustomLog /var/log/apachehttp/coder/access.log combined
+  ErrorLog /var/log/apachehttp/coder/error.log
+  CustomLog /var/log/apachehttp/coder/access.log combined
 </VirtualHost>
 
 <VirtualHost *:80>
@@ -431,9 +431,9 @@ $ mkdir ~/apachehttp
 </VirtualHost>
 ```
 
-* Copy and update at your convenience [~/apachehttp/httpd.conf](apachehttp/httpd.conf).
+* Copy and update at your convenience [~/apachehttp/httpd.conf](apachehttp/httpd.conf) configuration file.
 
-* Create [~/apachehttp/docker-compose.yaml](apachehttp/docker-compose.yaml) with the following content:
+* Create a file [~/apachehttp/docker-compose.yaml](apachehttp/docker-compose.yaml) with the following content:
 
 ```yaml
 services:
@@ -460,13 +460,13 @@ networks:
 
 * Create and start Apache HTTP container:
 
-```
+```console
 $ cd ~/apachehttp
 $ docker compose up -d
 ```
 
 ## Run
 
-* Open your favorite web browser at this URL: https://coder.mydomain.com
+* Open the https://coder.mydomain.com URL with your favorite web browser.
 
 ![Coder is running on K3s](./static/coder-sigin.png)
